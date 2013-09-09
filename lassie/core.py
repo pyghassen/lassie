@@ -7,6 +7,7 @@ lassie.core
 This module contains a Lassie object to maintain settings across lassie.
 
 """
+from pprint import pprint
 
 from bs4 import BeautifulSoup
 import requests
@@ -30,7 +31,7 @@ def merge_settings(fetch_setting, class_setting):
 class Lassie(object):
     __attrs__ = [
         'open_graph', 'twitter_card', 'touch_icon', 'favicon',
-        'all_images', 'parser', '_retreive_content'
+        'all_images', 'alexa', 'parser', '_retreive_content'
     ]
 
     def __init__(self):
@@ -40,13 +41,14 @@ class Lassie(object):
         self.touch_icon = True
         self.favicon = True
         self.all_images = False
+        self.alexa = True
         self.parser = 'html5lib'
 
     def __repr__(self):
         return '<Lassie [parser: %s]>' % (self.parser)
 
     def fetch(self, url, open_graph=None, twitter_card=None, touch_icon=None,
-              favicon=None, all_images=None, parser=None):
+              favicon=None, all_images=None, alexa=None, parser=None):
         """Retrieves content from the specified url, parses it, and returns
         a beautifully crafted dictionary of important information about that
         web page.
@@ -78,6 +80,7 @@ class Lassie(object):
         touch_icon = merge_settings(touch_icon, self.touch_icon)
         favicon = merge_settings(favicon, self.favicon)
         all_images = merge_settings(all_images, self.all_images)
+        alexa = merge_settings(alexa, self.alexa)
         parser = merge_settings(parser, self.parser)
 
         html = self._retreive_content(url)
@@ -104,6 +107,8 @@ class Lassie(object):
 
         if favicon:
             data.update(self._filter_link_tag_data('favicon', soup, data, url))
+        if alexa:
+            data.update(self._filter_alexa_data("ranking", soup, data, url))
 
         if all_images:
             # Maybe filter out 1x1, no "good" way to do this if image doesn't supply width/height
@@ -243,5 +248,47 @@ class Lassie(object):
                 img['height'] = height
 
             data['images'].append(img)
+
+        return data
+
+    def _filter_alexa_data(self, source, soup, data, url):
+        """This method filters the web page content for link tags that match patterns given in the ``FILTER_MAPS``
+
+        :param source: The key of the meta dictionary in ``FILTER_MAPS['link']``
+        :type source: string
+        :param soup: BeautifulSoup instance to find meta tags
+        :type soup: instance
+        :param data: The response dictionary to manipulate
+        :type data: (dict)
+        :param url: URL used for making an absolute url
+        :type url: string
+
+        """
+        print(url)
+        link = FILTER_MAPS['link']["ranking"]
+
+        html = soup.find_all('a', {link['key']: link['pattern']})
+
+        global_ranking, local_ranking = html
+        
+        link = FILTER_MAPS['link']["country"]
+        pprint(link)
+        html = soup.find_all('a',
+                                {
+                                    link['key']: link['pattern'],
+                                    link["another_key"]: link["another_pattern"]
+                                }
+                            )
+        pprint(html)
+        country = html[0] 
+
+        data.update(
+            {"ranking": {
+                "global": global_ranking.text,
+                "local": local_ranking.text,
+                "country": country.text, 
+                }
+            }
+            )
 
         return data

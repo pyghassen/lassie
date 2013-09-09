@@ -1,18 +1,8 @@
-# -*- coding: utf-8 -*-
-
-"""
-lassie.filters.generic
-~~~~~~~~~~~~~~~~~~~~~~
-
-This module contains data about generic type content to help Lassie filter for content.
-
-"""
-
 from ..compat import str
 
 import re
 
-GENERIC_MAPS = {
+ALEXA_MAPS = {
     'meta': {
         'generic': {
             'pattern': re.compile(r"^(description|keywords|title)", re.I),
@@ -27,10 +17,16 @@ GENERIC_MAPS = {
         },
     },
     'link': {
-        'favicon': {
-           'pattern': 'icon',
-           'key': 'rel',
-           'type': str('favicon'),
+        'country': {
+           'pattern': re.compile("/topsites/countries/"),
+           'key': 'href',
+           "another_key": "title",
+           "another_pattern": re.compile(".+"),
+        },
+        'ranking': {
+           'pattern': re.compile("/siteowners/certify\\?ax_atid"),
+           'key': "href",
+           # 'type': str('favicon'),
         },
     },
 }
